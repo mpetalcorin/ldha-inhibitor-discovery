@@ -1,229 +1,88 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "27103b0f-da3d-425d-9ec1-00d4203adc2d",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import streamlit as st\n",
-    "import pandas as pd\n",
-    "import numpy as np\n",
-    "import joblib\n",
-    "from rdkit import Chem\n",
-    "from rdkit.Chem import Descriptors, Crippen, QED\n",
-    "from mordred import Calculator, descriptors\n",
-    "import warnings\n",
-    "\n",
-    "warnings.filterwarnings(\"ignore\")\n",
-    "\n",
-    "# --- Load model and preprocessing tools ---\n",
-    "model = joblib.load(\"models/ldha_lightgbm_model.pkl\")\n",
-    "scaler = joblib.load(\"models/scaler.pkl\")\n",
-    "selector = joblib.load(\"models/selector.pkl\")\n",
-    "descriptor_names = joblib.load(\"models/descriptor_names.pkl\")\n",
-    "\n",
-    "# --- Streamlit Page Setup ---\n",
-    "st.set_page_config(page_title=\"LDHA Inhibitor Prediction\", layout=\"wide\")\n",
-    "st.title(\"LDHA Inhibitor Predictor\")\n",
-    "st.markdown(\"\"\"\n",
-    "Upload SMILES strings to check if they are potential **LDHA inhibitors**.\n",
-    "We’ll also compute drug-likeness scores like QED, LogP, MW, TPSA and Lipinski RO5.\n",
-    "\"\"\")\n",
-    "\n",
-    "# --- Sidebar Input ---\n",
-    "smiles_input = st.text_area(\"Paste SMILES (one per line):\", height=200)\n",
-    "\n",
-    "# --- Helper Functions ---\n",
-    "def compute_descriptors(smiles_list):\n",
-    "    calc = Calculator(descriptors, ignore_3D=True)\n",
-    "    mols, valid_smiles = [], []\n",
-    "    for smi in smiles_list:\n",
-    "        mol = Chem.MolFromSmiles(smi)\n",
-    "        if mol:\n",
-    "            mols.append(mol)\n",
-    "            valid_smiles.append(smi)\n",
-    "    descs = [calc(m).fill_missing(0).asdict() for m in mols]\n",
-    "    return pd.DataFrame(descs), valid_smiles, mols\n",
-    "\n",
-    "def druglikeness_properties(mol):\n",
-    "    mw = Descriptors.MolWt(mol)\n",
-    "    logp = Crippen.MolLogP(mol)\n",
-    "    qed = QED.qed(mol)\n",
-    "    tpsa = Descriptors.TPSA(mol)\n",
-    "    ro5 = int((mw > 500) + (logp > 5) + (Descriptors.NumHDonors(mol) > 5) + (Descriptors.NumHAcceptors(mol) > 10))\n",
-    "    return mw, logp, qed, tpsa, ro5\n",
-    "\n",
-    "# --- Prediction Logic ---\n",
-    "if st.button(\"Predict\"):\n",
-    "    if smiles_input.strip():\n",
-    "        smiles_list = [s.strip() for s in smiles_input.splitlines() if s.strip()]\n",
-    "        desc_df, valid_smiles, mols = compute_descriptors(smiles_list)\n",
-    "\n",
-    "        if len(valid_smiles) == 0:\n",
-    "            st.warning(\"No valid SMILES found.\")\n",
-    "        else:\n",
-    "            try:\n",
-    "                desc_df = desc_df[descriptor_names]\n",
-    "                desc_scaled = scaler.transform(desc_df)\n",
-    "                desc_selected = selector.transform(desc_scaled)\n",
-    "\n",
-    "                preds = model.predict(desc_selected)\n",
-    "                probs = model.predict_proba(desc_selected)[:, 1]\n",
-    "\n",
-    "                results = []\n",
-    "                for i, smi in enumerate(valid_smiles):\n",
-    "                    mw, logp, qed, tpsa, ro5 = druglikeness_properties(mols[i])\n",
-    "                    results.append({\n",
-    "                        \"SMILES\": smi,\n",
-    "                        \"LDHA_Prob\": round(probs[i], 3),\n",
-    "                        \"Prediction\": \"Active\" if preds[i] == 1 else \"Inactive\",\n",
-    "                        \"QED\": round(qed, 3),\n",
-    "                        \"LogP\": round(logp, 3),\n",
-    "                        \"MW\": round(mw, 1),\n",
-    "                        \"TPSA\": round(tpsa, 1),\n",
-    "                        \"RO5_Violations\": ro5\n",
-    "                    })\n",
-    "\n",
-    "                df_results = pd.DataFrame(results)\n",
-    "                st.success(f\"Predicted {len(df_results)} molecules.\")\n",
-    "                st.dataframe(df_results)\n",
-    "                csv = df_results.to_csv(index=False).encode(\"utf-8\")\n",
-    "                st.download_button(\"Download Results\", data=csv, file_name=\"ldha_predictions.csv\", mime=\"text/csv\")\n",
-    "            except Exception as e:\n",
-    "                st.error(f\"Error: {e}\")\n",
-    "    else:\n",
-    "        st.warning(\"Please input SMILES.\")\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "371f3b44-723a-4f2b-ad33-6d8305a1ff8e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "from pathlib import Path\n",
-    "\n",
-    "# Define the corrected Streamlit app code\n",
-    "streamlit_app_code = \n",
-    "import streamlit as st\n",
-    "import pandas as pd\n",
-    "import numpy as np\n",
-    "from rdkit import Chem\n",
-    "from mordred import Calculator, descriptors\n",
-    "from lightgbm import LGBMClassifier\n",
-    "import joblib\n",
-    "from rdkit.Chem import Crippen, Descriptors, QED\n",
-    "import warnings\n",
-    "warnings.filterwarnings(\"ignore\")\n",
-    "\n",
-    "# Load model and preprocessing tools\n",
-    "model = joblib.load(\"ldha_lightgbm_model.pkl\")\n",
-    "scaler = joblib.load(\"scaler.pkl\")\n",
-    "selector = joblib.load(\"selector.pkl\")\n",
-    "descriptor_columns = joblib.load(\"descriptor_names.pkl\")\n",
-    "\n",
-    "# Streamlit layout\n",
-    "st.set_page_config(page_title=\"LDHA Inhibitor Predictor\", layout=\"wide\")\n",
-    "st.title(\"LDHA Inhibitor Prediction App\")\n",
-    "st.markdown(\"\"\"\n",
-    "Upload SMILES strings to predict their potential as **LDHA inhibitors**. \n",
-    "Also evaluates key drug-likeness properties.\n",
-    "\"\"\")\n",
-    "\n",
-    "# Sidebar SMILES input\n",
-    "smiles_input = st.text_area(\"Enter SMILES (one per line):\", height=200)\n",
-    "\n",
-    "# Function to compute descriptors\n",
-    "def compute_descriptors(smiles_list):\n",
-    "    calc = Calculator(descriptors, ignore_3D=True)\n",
-    "    mols, valid_smiles = [], []\n",
-    "    for smi in smiles_list:\n",
-    "        mol = Chem.MolFromSmiles(smi)\n",
-    "        if mol:\n",
-    "            mols.append(mol)\n",
-    "            valid_smiles.append(smi)\n",
-    "    descs = [calc(m).fill_missing(0).asdict() for m in mols]\n",
-    "    return pd.DataFrame(descs), valid_smiles, mols\n",
-    "\n",
-    "# Function to calculate drug-likeness metrics\n",
-    "def druglikeness_properties(mol):\n",
-    "    mw = Descriptors.MolWt(mol)\n",
-    "    logp = Crippen.MolLogP(mol)\n",
-    "    qed = QED.qed(mol)\n",
-    "    tpsa = Descriptors.TPSA(mol)\n",
-    "    ro5 = int((mw > 500) + (logp > 5) + (Descriptors.NumHDonors(mol) > 5) + (Descriptors.NumHAcceptors(mol) > 10))\n",
-    "    return mw, logp, qed, tpsa, ro5\n",
-    "\n",
-    "# Prediction and output\n",
-    "if st.button(\"Predict\"):\n",
-    "    if smiles_input.strip():\n",
-    "        smiles_list = [s.strip() for s in smiles_input.splitlines() if s.strip()]\n",
-    "        desc_df, valid_smiles, mols = compute_descriptors(smiles_list)\n",
-    "\n",
-    "        if len(valid_smiles) == 0:\n",
-    "            st.warning(\"No valid SMILES found.\")\n",
-    "        else:\n",
-    "            desc_df = desc_df[descriptor_columns]\n",
-    "            desc_scaled = scaler.transform(desc_df)\n",
-    "            desc_selected = selector.transform(desc_scaled)\n",
-    "            preds = model.predict(desc_selected)\n",
-    "            probs = model.predict_proba(desc_selected)[:, 1]\n",
-    "\n",
-    "            results = []\n",
-    "            for i, smi in enumerate(valid_smiles):\n",
-    "                mw, logp, qed, tpsa, ro5 = druglikeness_properties(mols[i])\n",
-    "                results.append({\n",
-    "                    \"SMILES\": smi,\n",
-    "                    \"LDHA_Probability\": round(probs[i], 3),\n",
-    "                    \"Prediction\": \"Active\" if preds[i] == 1 else \"Inactive\",\n",
-    "                    \"QED\": round(qed, 3),\n",
-    "                    \"LogP\": round(logp, 3),\n",
-    "                    \"MW\": round(mw, 1),\n",
-    "                    \"TPSA\": round(tpsa, 1),\n",
-    "                    \"RO5_Violations\": ro5\n",
-    "                })\n",
-    "\n",
-    "            df_results = pd.DataFrame(results)\n",
-    "            st.success(f\"Predicted {len(df_results)} molecules.\")\n",
-    "            st.dataframe(df_results)\n",
-    "\n",
-    "            # CSV download\n",
-    "            csv = df_results.to_csv(index=False).encode(\"utf-8\")\n",
-    "            st.download_button(\"Download Predictions\", data=csv, file_name=\"ldha_predictions.csv\", mime=\"text/csv\")\n",
-    "    else:\n",
-    "        st.warning(\"Please input valid SMILES strings.\")\n",
-    "'''\n",
-    "\n",
-    "# Save the code to streamlit_app.py\n",
-    "streamlit_app_path = Path(\"/mnt/data/streamlit_app.py\")\n",
-    "streamlit_app_path.write_text(streamlit_app_code)\n",
-    "\n",
-    "streamlit_app_path.name"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python [conda env:base] *",
-   "language": "python",
-   "name": "conda-base-py"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.12.2"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+import streamlit as st
+import pandas as pd
+import numpy as np
+import joblib
+from rdkit import Chem
+from rdkit.Chem import Descriptors, Crippen, QED
+from mordred import Calculator, descriptors
+import warnings
+
+warnings.filterwarnings("ignore")
+
+# --- Load model and preprocessing tools ---
+model = joblib.load("models/ldha_lightgbm_model.pkl")
+scaler = joblib.load("models/scaler.pkl")
+selector = joblib.load("models/selector.pkl")
+descriptor_names = joblib.load("models/descriptor_names.pkl")
+
+# --- Streamlit Page Setup ---
+st.set_page_config(page_title="LDHA Inhibitor Prediction", layout="wide")
+st.title("LDHA Inhibitor Predictor")
+st.markdown("""
+Upload SMILES strings to check if they are potential **LDHA inhibitors**.
+We’ll also compute drug-likeness scores like QED, LogP, MW, TPSA and Lipinski RO5.
+""")
+
+# --- Sidebar Input ---
+smiles_input = st.text_area("Paste SMILES (one per line):", height=200)
+
+# --- Helper Functions ---
+def compute_descriptors(smiles_list):
+    calc = Calculator(descriptors, ignore_3D=True)
+    mols, valid_smiles = [], []
+    for smi in smiles_list:
+        mol = Chem.MolFromSmiles(smi)
+        if mol:
+            mols.append(mol)
+            valid_smiles.append(smi)
+    descs = [calc(m).fill_missing(0).asdict() for m in mols]
+    return pd.DataFrame(descs), valid_smiles, mols
+
+def druglikeness_properties(mol):
+    mw = Descriptors.MolWt(mol)
+    logp = Crippen.MolLogP(mol)
+    qed = QED.qed(mol)
+    tpsa = Descriptors.TPSA(mol)
+    ro5 = int((mw > 500) + (logp > 5) + (Descriptors.NumHDonors(mol) > 5) + (Descriptors.NumHAcceptors(mol) > 10))
+    return mw, logp, qed, tpsa, ro5
+
+# --- Prediction Logic ---
+if st.button("Predict"):
+    if smiles_input.strip():
+        smiles_list = [s.strip() for s in smiles_input.splitlines() if s.strip()]
+        desc_df, valid_smiles, mols = compute_descriptors(smiles_list)
+
+        if len(valid_smiles) == 0:
+            st.warning("No valid SMILES found.")
+        else:
+            try:
+                desc_df = desc_df[descriptor_names]
+                desc_scaled = scaler.transform(desc_df)
+                desc_selected = selector.transform(desc_scaled)
+
+                preds = model.predict(desc_selected)
+                probs = model.predict_proba(desc_selected)[:, 1]
+
+                results = []
+                for i, smi in enumerate(valid_smiles):
+                    mw, logp, qed, tpsa, ro5 = druglikeness_properties(mols[i])
+                    results.append({
+                        "SMILES": smi,
+                        "LDHA_Prob": round(probs[i], 3),
+                        "Prediction": "Active" if preds[i] == 1 else "Inactive",
+                        "QED": round(qed, 3),
+                        "LogP": round(logp, 3),
+                        "MW": round(mw, 1),
+                        "TPSA": round(tpsa, 1),
+                        "RO5_Violations": ro5
+                    })
+
+                df_results = pd.DataFrame(results)
+                st.success(f"Predicted {len(df_results)} molecules.")
+                st.dataframe(df_results)
+                csv = df_results.to_csv(index=False).encode("utf-8")
+                st.download_button("Download Results", data=csv, file_name="ldha_predictions.csv", mime="text/csv")
+            except Exception as e:
+                st.error(f"Error: {e}")
+    else:
+        st.warning("Please input SMILES.")
