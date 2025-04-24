@@ -184,7 +184,7 @@ We gathered real-world drug data from:
 
 ###  1. Clone the repository
 
-git clone https://github.com/mpetalcorin/ldha-drug-discovery.git
+git clone https://github.com/mpetalcorin/ldha-inhibitor-discovery
 cd ldha-drug-discovery-capstone
 
 ###  2. Install dependencies
