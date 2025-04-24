@@ -32,16 +32,30 @@ git clone https://github.com/mpetalcorin/ldha-drug-discovery-capstone.git
 cd ldha-drug-discovery-capstone
 streamlit run app.py
 ```
-
-## Folder Structure
-```
-📁 data/
-📁 models/
-📁 notebooks/
-📁 reports/
-📁 app/
-📄 README.md
-📄 requirements.txt
+## Project Structure
+```bash
+ldha-drug-discovery-capstone/
+├── data/ # Raw and curated datasets
+│   ├── LDHA_inhibitors_SMOTE_balanced_with_SMILES.csv
+│   ├── chemGPT_selfies_ldha_1000candidates.csv
+│   └── coconut_csv-04-2025.csv
+├── models/# Saved models (pkl)
+│   ├── ldha_lightgbm_model.pkl
+│   ├── scaler.pkl
+│   ├── selector.pkl
+│   └── descriptor_names.pkl
+├── app/# Streamlit web app (app.py)
+│   └── app.py (Streamlit)
+├── notebooks/ # Jupyter notebooks
+│   └── full_pipeline.ipynb
+├── reports/# Model card, data sheet, summary
+│   ├── ModelCard.md
+│   └── DataSheet.md
+├── figures/# Confusion matrix, ROC, SHAP
+├── requirements.txt # Pip dependencies
+├── environment.yml # Conda environment (optional)
+├── README.md # Project overview
+└── LICENSE
 ```
 
 # Model Card
