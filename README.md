@@ -1,4 +1,4 @@
-# LDHA Drug Discovery Capstone Project
+# LDHA Drug Discovery Project
 
 ## Project Overview
 This project combines artificial intelligence and drug discovery to identify potential inhibitors of LDHA (Lactate Dehydrogenase A), a key enzyme involved in cancer cell metabolism. By using bioactivity data, machine learning models, and molecule-generating AI (ChemGPT + SELFIES), we developed a full pipeline that screens both known and novel molecules.
@@ -124,7 +124,7 @@ This model will be updated when additional validated LDHA inhibitors become avai
 
 # Supplementary Information on LDHA-Inhibitor-Discovery
 Machine learning pipeline to discover LDHA inhibitors
-#  LDHA Drug Discovery Capstone Project
+#  LDHA Drug Discovery Project
 
 ##  What this project is all about?
 
@@ -213,7 +213,9 @@ streamlit run app.py
 
 #  Author
 **Mark Petalcorin**\
-Capstone Project – AI for Drug Discovery 2025\
+Project – AI for Drug Discovery 2025\
 *For inquiries, collaborations, or career opportunities, feel free to reach out or fork this repo!*
 
-
+#  Citation
+*M.F. Petalcorin, M.I.R. Petalcorin (2025) AI-Guided Discovery of LDHA Inhibitors Targeting Cancer Metabolism Using Machine Learning and Generative Chemistry: An End-to-End Drug Discovery Pipeline. https://www.biorxiv.org/content/10.1101/2025.05.13.653702v1\
+doi: https://doi.org/10.1101/2025.05.13.653702*  
